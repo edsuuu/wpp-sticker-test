@@ -8,14 +8,14 @@ const STICKER_COMMAND = "/st"
 
 const MediaType = {
     Image: { contentType: "image/jpeg", fileName: "image.jpg" },
-    Video: { contentType: "video/mp4", fileName: "image.mp4" }
+    Video: { contentType: "video/mp4", fileName: "video.mp4" }
 }
 
 // Parse command line arguments
 commander
     .usage('[OPTIONS]...')
     .option('-d, --debug', 'Show debug logs', false)
-    .option('-c, --chrome <value>', 'Use a installed Chrome Browser')
+    .option('-c, --chrome <value>', 'Use an installed Chrome Browser')
     .option('-f, --ffmpeg <value>', 'Use a different ffmpeg')
     .parse(process.argv)
 
@@ -28,9 +28,10 @@ const ffmpegPath = options.ffmpeg ? options.ffmpeg : undefined
 // Inicialize WhatsApp Web client
 const client = new Client({
     authStrategy: new LocalAuth(),
-    ffmpegPath,
+    ffmpegPath: 'C:\\Users\\edson.dasilva.ext\\Documents\\github\\wpp-sticker\\ffm\\bin\\ffmpeg.exe', // Substitua com o caminho correto
     puppeteer: puppeteerConfig,
 })
+
 
 log_debug("Starting...")
 
@@ -39,7 +40,6 @@ const generateSticker = async (msg, sender) => {
     await msg.reply("⏳ Processando, aguarde...")
 
     if (msg.type === "image") {
-        log_debug()
         const { data } = await msg.downloadMedia()
         await sendMediaSticker(sender, MediaType.Image, data)
     } else if (msg.type === "video") {
@@ -49,18 +49,23 @@ const generateSticker = async (msg, sender) => {
         let url = msg.body.split(" ").reduce((acc, elem) => acc ? acc : (urlRegex().test(elem) ? elem : false), false)
         if (url) {
             log_debug("URL:", url)
-            let { data, headers } = await axios.get(url, { responseType: 'arraybuffer' })
-            data = Buffer.from(data).toString('base64');
-            let mediaType;
-            if (headers['content-type'].includes("image")) {
-                mediaType = MediaType.Image
-            } else if (headers['content-type'].includes("video")) {
-                mediaType = MediaType.Video
-            } else {
-                msg.reply("❌ Erro, URL inválida!")
-                return
+            try {
+                let { data, headers } = await axios.get(url, { responseType: 'arraybuffer' })
+                data = Buffer.from(data).toString('base64');
+                let mediaType;
+                if (headers['content-type'].includes("image")) {
+                    mediaType = MediaType.Image;
+                } else if (headers['content-type'].includes("video")) {
+                    mediaType = MediaType.Video;
+                } else {
+                    msg.reply("❌ Erro, Tipo de mídia não suportado!");
+                    return;
+                }
+                await sendMediaSticker(sender, mediaType, data);
+            } catch (error) {
+                console.error(error);
+                msg.reply("❌ Erro ao processar a URL!");
             }
-            await sendMediaSticker(sender, mediaType, data)
         } else {
             msg.reply("❌ Erro, URL inválida!")
         }
@@ -68,7 +73,8 @@ const generateSticker = async (msg, sender) => {
 }
 
 const sendMediaSticker = async (sender, type, data) => {
-    const media = new MessageMedia(type.contentType, data, type.fileName)
+    const fileName = type === MediaType.Image ? "image.jpg" : "video.mp4";
+    const media = new MessageMedia(type.contentType, data, fileName);
     await client.sendMessage(sender, media, { sendMediaAsSticker: true })
 }
 
@@ -87,7 +93,7 @@ client.on('message_create', async msg => {
         try {
             await generateSticker(msg, sender)
         } catch (e) {
-            console.log(e, JSON.stringify(msg, null, 4))
+            console.error(e);
             msg.reply("❌ Erro ao gerar Sticker!")
         }
     }
