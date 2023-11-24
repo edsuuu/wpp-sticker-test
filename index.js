@@ -5,6 +5,7 @@ const axios = require('axios')
 const urlRegex = require('url-regex')
 
 const STICKER_COMMAND = "/st"
+const STICKER_HELP = "/duvida"
 
 const MediaType = {
     Image: { contentType: "image/jpeg", fileName: "image.jpg" },
@@ -23,7 +24,7 @@ const options = commander.opts()
 
 const log_debug = options.debug ? console.log : () => { }
 const puppeteerConfig = !options.chrome ? {} : { executablePath: options.chrome, args: ['--no-sandbox'] }
-const ffmpegPath = options.ffmpeg ? options.ffmpeg : undefined
+// const ffmpegPath = options.ffmpeg ? options.ffmpeg : undefined
 
 // Inicialize WhatsApp Web client
 const client = new Client({
@@ -32,12 +33,13 @@ const client = new Client({
     puppeteer: puppeteerConfig,
 })
 
+log_debug("Inicializando o QRCODE/Projeto...")
 
-log_debug("Starting...")
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const generateSticker = async (msg, sender) => {
     log_debug("Processing message ", msg.type, JSON.stringify(msg.body, null, 4))
-    await msg.reply("⏳ Processando, aguarde...")
+    await msg.reply("Processando a figurinha, aguarde alguns segundos...⏳")
 
     if (msg.type === "image") {
         const { data } = await msg.downloadMedia()
@@ -98,5 +100,37 @@ client.on('message_create', async msg => {
         }
     }
 })
+
+client.on('message_create', message => {
+	if(message.body === STICKER_HELP) {
+		message.reply(`
+        ====================================
+        
+        *COMO GERAR AS FIGURINHAS*
+        
+        Envie sua imagem e na legenda,
+        coloque o comando informado abaixo
+        para poder gerar sua Figurinha.
+
+        ======================
+        *COMANDO PARA GERAR AS FIGURINHAS*
+
+        /st
+
+        ====================================
+        *PARA QUAL ARQUIVOS TEM SUPORTE*
+        *PARA GERAR O STICKER ?* 
+        
+        IMAGENS, VIDEO E GIFS
+        
+        "PARA LINKS AINDA ESTA SEM SUPORTE"
+        
+        ====================================
+
+            *Faça sua Figurinha*
+
+        `);
+	}
+});
 
 client.initialize()
