@@ -29,7 +29,7 @@ const puppeteerConfig = !options.chrome ? {} : { executablePath: options.chrome,
 // Inicialize WhatsApp Web client
 const client = new Client({
     authStrategy: new LocalAuth(),
-    ffmpegPath: './ffm/bin/ffmpeg.exe', // Substitua com o caminho correto
+    ffmpegPath: 'C:\\Users\\edson.dasilva.ext\\Documents\\github\\wpp-sticker\\ffm\\bin\\ffmpeg.exe', // Substitua com o caminho correto
     puppeteer: puppeteerConfig,
 })
 
